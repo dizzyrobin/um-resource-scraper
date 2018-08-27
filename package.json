@@ -1,0 +1,28 @@
+{
+  "name": "um-resource-scraper",
+  "version": "0.1.0",
+  "description": "A web scraper for obtaining the resources of your profile in the University of Murcia.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dizzyrobin/um-resource-scraper.git"
+  },
+  "keywords": [
+    "um",
+    "resouce",
+    "scraper"
+  ],
+  "author": "dizzyrobin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dizzyrobin/um-resource-scraper/issues"
+  },
+  "homepage": "https://github.com/dizzyrobin/um-resource-scraper#readme",
+  "dependencies": {
+    "puppeteer": "^1.7.0"
+  }
+}
