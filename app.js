@@ -1,19 +1,13 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import PropType from 'prop-types';
+import {connect} from 'react-redux';
+import {fetchSubjects} from './src/actions/subjects';
+
+import SubjectList from './components/subject-list';
 
 // This is done like this because of a problem with "parcel"
 const umFetcherLocation = '../um-fetcher';
 const UmFetcher = require(umFetcherLocation);
-
-// const {} = require('../i' + 'ndex');
-
-// const
-
-// indexxx().then(e => {
-//   console.log('Done!');
-// }).catch(err => {
-//   console.log('Error!');
-// });
 
 class App extends React.Component {
   constructor() {
@@ -22,7 +16,6 @@ class App extends React.Component {
     this.state = {
       user: 'pedrojavier.nicolas@um.es',
       password: '',
-      subjects: undefined,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -33,8 +26,7 @@ class App extends React.Component {
 
   handleChange(event) {
     const {target} = event;
-    const name = target.name;
-    const value = target.value;
+    const {name, value} = target;
     this.setState({
       [name]: value,
     });
@@ -58,7 +50,8 @@ class App extends React.Component {
               title: e.title,
               checked: false,
             }));
-            this.setState({subjects});
+            // this.setState({subjects}); // FIXME: Change to redux
+            this.props.fetchSubjects(subjects);
           }).catch(err => {
             console.error(err);
           });
@@ -78,17 +71,6 @@ class App extends React.Component {
   render() {
     const {user, password} = this.state;
 
-    let subjects;
-
-    if (this.state.subjects !== undefined) {
-      subjects = this.state.subjects.map(({resource, title, checked}) => (
-        <div>
-          {/* <input type="checkbox" checked={checked} onClick={this.handleToggleSubject(index)} /> */}
-          {title}
-        </div>
-      ));
-    }
-
     return (
       <div>
 
@@ -99,26 +81,32 @@ class App extends React.Component {
           <input type="text" name="user" value={user} onChange={this.handleChange}/>
         </div>
 
-        <br />
+        <br/>
 
         <div>
           <div>Password:</div>
           <input type="password" name="password" value={password} onChange={this.handleChange}/>
         </div>
 
-        <br />
+        <br/>
 
         <button type="button" onClick={this.handleClick}>Fetch subjects</button>
 
-        <br />
+        <br/>
 
-        {subjects}
-
+        <SubjectList/>
 
       </div>
     );
   }
 }
 
+App.propTypes = {
+  fetchSubjects: PropType.func.isRequired,
+};
 
-ReactDOM.render(<App />, document.getElementById('app'));
+const mapDispatchToProps = dispatch => ({
+  fetchSubjects: subjects => dispatch(fetchSubjects(subjects)),
+});
+
+export default connect(null, mapDispatchToProps)(App);

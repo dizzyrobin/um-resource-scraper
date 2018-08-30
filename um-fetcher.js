@@ -89,8 +89,10 @@ const getSubjects = async page => {
   //   console.log(JSON.stringify(e));
   // });
 
-  return sites;
-
+  // TODO: Handle error if a non-unique resource is found
+  return sites
+    .filter((value, index) => sites.findIndex(e => e.resource === value.resource) === index)
+    .sort((a, b) => a.title > b.title ? 1 : -1);
 };
 
 const closeBrowser = async () => {

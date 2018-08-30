@@ -1,0 +1,2 @@
+export const TOGGLE_SUBJECT = 'TOGGLE_SUBJECT';
+export const FETCH_SUBJECTS = 'FETCH_SUBJECTS';
