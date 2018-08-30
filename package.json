@@ -5,7 +5,9 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron .",
+    "build": "parcel build index.html --public-url ./",
+    "dev": "npm run build && npm start"
   },
   "repository": {
     "type": "git",
@@ -23,7 +25,12 @@
   },
   "homepage": "https://github.com/dizzyrobin/um-resource-scraper#readme",
   "dependencies": {
+    "electron": "^2.0.8",
     "puppeteer": "^1.7.0",
-    "electron": "^2.0.8"
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.9.7"
   }
 }

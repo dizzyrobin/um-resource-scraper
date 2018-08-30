@@ -16,7 +16,7 @@ const waitMs = async ms => {
   })
 };
 
-const getSubjects = async () => {
+const login = async (user, password) => {
   console.log('Starting the headless browser...');
   const browser = await puppeteer.launch();
 
@@ -47,6 +47,12 @@ const getSubjects = async () => {
   await pagePassword.type(password);
   await pageSubmit.click();
   await waitMs(WAIT_LONG);
+
+  return {browser, page};
+}
+
+const getSubjects = async page => {
+
   await page.goto(UM_AULA_PAGE);
 
   console.log('Waiting for the JS...');
@@ -78,16 +84,24 @@ const getSubjects = async () => {
     sites[i] = site;
   }
 
-  console.log('Printing the sites...');
-  sites.forEach(e => {
-    console.log(JSON.stringify(e));
-  });
+  // console.log('Printing the sites...');
+  // sites.forEach(e => {
+  //   console.log(JSON.stringify(e));
+  // });
+
+  return sites;
+
+};
+
+const closeBrowser = async () => {
+  console.log('Closing the headless browser...');
+  await browser.close();
+}
+
+module.exports.login = login;
+module.exports.closeBrowser = closeBrowser;
+module.exports.getSubjects = getSubjects;
+
 
   // console.log('Taking screenshot...');
   // await page.screenshot({path: 'example.png'});
-
-  console.log('Closing the headless browser...');
-  await browser.close();
-};
-
-getSubjects();

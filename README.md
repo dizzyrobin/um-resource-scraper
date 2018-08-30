@@ -35,10 +35,10 @@ npm install
 
 ## Ejecución
 
-Para ejecutar el programa:
+Para ejecutar el programa en modo desarrollo:
 
 ```
-npm start
+npm run dev
 ```
 
 ## ¿Qué pasa si no tengo instalado eso de "node", o "git"?

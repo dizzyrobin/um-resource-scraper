@@ -1,3 +1,6 @@
 node_modules
+dist
 key.js
 example.png
+.cache
+
