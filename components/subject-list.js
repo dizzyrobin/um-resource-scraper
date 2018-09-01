@@ -12,25 +12,25 @@ const UmFetcher = require(umFetcherLocation);
 
 class SubjectList extends React.Component {
   getResources(browser, page, subjects) {
-    // for (const subject of subjects) {
-      // TODO: Move cookies to redux store
-      UmFetcher.getCookies(page)
+    // TODO: Move cookies to redux store
+    UmFetcher.getCookies(page)
       .then(cookies => {
-        UmFetcher.getResources(browser, subjects[0].resource)
-        .then(links => {
-          UmFetcher.downloadList(cookies, links)
-          .then(() => {
-            console.log('List downloaded!');
-          }).catch(err => {
-            console.error(err);
-          });
-        }).catch(err => {
-          console.error(err);
-        });
+        for (const subject of subjects) {
+          UmFetcher.getResources(browser, subject.resource)
+            .then(links => {
+              UmFetcher.downloadList(cookies, links)
+                .then(() => {
+                  console.log('List downloaded!');
+                }).catch(err => {
+                  console.error(err);
+                });
+            }).catch(err => {
+              console.error(err);
+            });
+        }
       }).catch(err => {
         console.error(err);
       });
-    // }
   }
 
   render() {
