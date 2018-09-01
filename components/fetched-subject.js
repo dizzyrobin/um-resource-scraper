@@ -19,7 +19,7 @@ class FetchedSubject extends React.Component {
   }
 
   render() {
-    const {title, checked, resource} = this.props;
+    const {title, checked} = this.props;
 
     return (
       <div className={style.main}>

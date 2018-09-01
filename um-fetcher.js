@@ -1,6 +1,6 @@
+const fs = require('fs');
 const puppeteer = require('puppeteer');
 const fetch = require('node-fetch');
-const fs = require('fs');
 
 const WAIT_LONG = 2500;
 const WAIT_NORMAL = 1000;
@@ -14,6 +14,15 @@ const UM_RESOURCE_PAGE = 'https://aulavirtual.um.es/access/content/group';
 const RESOURCE_DOWNLOAD_FOLDER = './resources';
 
 const getResourceLink = resource => `${UM_RESOURCE_PAGE}/${resource}/`;
+
+const stringifyCookie = ({ name, value }) => `${name}=${value}`;
+
+const streamCompletion = stream =>
+  new Promise((resolve, reject) => {
+    stream.on('end', resolve)
+    stream.on('finish', resolve)
+    stream.on('error', reject)
+  });
 
 const waitMs = async ms => {
   return new Promise(resolve => {
@@ -143,12 +152,16 @@ const getAllLinks = async (page, resourceLink) => {
 
 const formatLink = link => {
   // TODO: Remove that magic number
-  return link.split('/').slice(6); // Why 6? Good question! Because of  ['https:', '', 'aulavirtual.um.es', 'access', 'content', 'group'] has a length of 6.
+  return link
+    .replace(/%20/g, '-')
+    .split('/')
+    .slice(6) // Why 6? Good question! Because of  ['https:', '', 'aulavirtual.um.es', 'access', 'content', 'group'] has a length of 6.
 };
 
-const getResources = async (page, resource) => {
+const getResources = async (browser, resource) => {
   console.log('Getting resources...');
   const resourceLink = getResourceLink(resource);
+  const page = await browser.newPage();
   await page.goto(resourceLink);
   await waitMs(WAIT_SHORT);
 
@@ -157,6 +170,8 @@ const getResources = async (page, resource) => {
 
   console.log('Links found!');
   const formattedLinks = links.map(l => ({url: l, formatted: formatLink(l)}));
+
+  await page.close();
 
   return formattedLinks;
 };
@@ -195,82 +210,22 @@ const downloadList = async (cookies, list) => {
     }
 
     const folder = createFolderHierarchy(formatted.slice(0, formatted.length - 1));
-    const file = fs.createWriteStream(`${folder}/${formatted[formatted.length - 1]}`);
+    const fileName = `${folder}/${formatted[formatted.length - 1]}`;
+    const file = fs.createWriteStream(fileName);
     await streamCompletion(res.body.pipe(file));
   }
 };
-
-const stringifyCookie = ({ name, value }) => `${name}=${value}`;
-
-const streamCompletion = stream =>
-  new Promise((resolve, reject) => {
-    stream.on('end', resolve)
-    stream.on('finish', resolve)
-    stream.on('error', reject)
-  });
 
 const getCookies = async page => {
   const cookies = await page.cookies();
   const cookiesString = cookies.map(c => stringifyCookie(c)).reduce((prev, curr) => `${curr}; ${prev}`, '');
 
   return cookiesString;
-}
-
-const downloadLink = async (page, link) => {
-  // const {url} = link;
-  const cookies = await getCookies(page);
-
-  // console.log("Downloading: " + url);
-
-  const res = await fetch('https://aulavirtual.um.es/access/content/group/1906_G_2017_N_N/PR%C3%81CTICAS/GRUPO%201/PRACTICA%201/P1.1-Fundamentos-Teoricos.pdf', {
-    headers: {
-      Cookie: cookies,
-      cookie: cookies,
-    },
-  });
-
-  if (res.status !== 200) {
-    throw new Error(`Unexpected response code ${res.status}`);
-  }
-
-  const file = fs.createWriteStream('whateeeeeeeeever.pdf');
-
-  console.log("EMPIEZA LA COPIA A LOCAL");
-  await streamCompletion(res.body.pipe(file));
-  console.log("ACABA LA COPIA A LOCAL");
-
 };
-
-// const downloadTest = async () => {
-//   console.log('Starting the headless browser...');
-//   const browser = await puppeteer.launch();
-
-//   console.log('Loading the login page...');
-//   const page = await browser.newPage();
-
-//   const downloadURL = "https://nodejs.org/dist/v6.11.3/SHASUMS256.txt.sig";
-
-//   const responseHandler = async (response) => {
-//     if (response.url !== downloadURL) {
-//       return
-//     }
-
-//     const buffer = await response.buffer();
-//     console.log('response buffer', buffer);
-//     browser.close();
-//   }
-//   page.on('response', responseHandler)
-//   await page.goto(downloadURL);
-// };
 
 module.exports.login = login;
 module.exports.closeBrowser = closeBrowser;
 module.exports.getSubjects = getSubjects;
 module.exports.getResources = getResources;
 module.exports.downloadList = downloadList;
-module.exports.downloadLink = downloadLink;
-// module.exports.downloadTest = downloadTest;
-
-// How to take a screenshot:
-// console.log('Taking screenshot...');
-// await page.screenshot({path: 'example.png'});
+module.exports.getCookies = getCookies;

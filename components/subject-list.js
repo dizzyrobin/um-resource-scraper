@@ -1,7 +1,6 @@
 import React from 'react';
 import PropType from 'prop-types';
 import {connect} from 'react-redux';
-// import {ipcRenderer} from 'electron';
 
 import style from './fetched-subject.css';
 
@@ -12,25 +11,26 @@ const umFetcherLocation = '../um-fetcher';
 const UmFetcher = require(umFetcherLocation);
 
 class SubjectList extends React.Component {
-  getResources(page, subjects) {
+  getResources(browser, page, subjects) {
     // for (const subject of subjects) {
-    // }
-
-    console.log("GETTING THE RESOURCE...");
-    console.log(page);
-    console.log(subjects[0].resource);
-
-    UmFetcher.getResources(page, subjects[0].resource)
-      .then(links => {
-        UmFetcher.downloadList(page, links)
+      // TODO: Move cookies to redux store
+      UmFetcher.getCookies(page)
+      .then(cookies => {
+        UmFetcher.getResources(browser, subjects[0].resource)
+        .then(links => {
+          UmFetcher.downloadList(cookies, links)
           .then(() => {
-            console.log("List downloaded!");
+            console.log('List downloaded!');
           }).catch(err => {
             console.error(err);
           });
+        }).catch(err => {
+          console.error(err);
+        });
       }).catch(err => {
         console.error(err);
       });
+    // }
   }
 
   render() {
@@ -46,7 +46,6 @@ class SubjectList extends React.Component {
 
     const subjectsRender = subjects.map(e => <FetchedSubject key={e.resource} title={e.title} resource={e.resource} checked={e.checked}/>);
 
-
     return (
       <div className={style.main}>
         <div>Asignaturas:</div>
@@ -55,7 +54,7 @@ class SubjectList extends React.Component {
 
         <div>Los archivos se guardarán dentro de la carpeta de este programa, en la carpeta {'"recursos"'}</div>
 
-        <button type="button" onClick={() => this.getResources(nav.page, subjects.filter(e => e.checked === true))}>Get resources</button>
+        <button type="button" onClick={() => this.getResources(nav.browser, nav.page, subjects.filter(e => e.checked === true))}>Get resources</button>
       </div>
     );
   }
