@@ -1,14 +1,22 @@
 const {app, BrowserWindow} = require('electron');
+const {download} = require('electron-dl');
 
 let mainWindow;
 
-function createWindow () {
+function createWindow() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   mainWindow.loadFile('dist/index.html');
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools();
+
+  // ipcMain.on('download', (event, info) => {
+  //   console.log("Gonna download " + info.url);
+  //   console.log("With propierties: " + JSON.stringify(info.properties));
+  //   download(BrowserWindow.getFocusedWindow(), info.url, info.properties)
+  //     .then(dl => mainWindow.webContents.send('download complete', dl.getSavePath()));
+  // });
 
   mainWindow.on('closed', () => {
     mainWindow = null;

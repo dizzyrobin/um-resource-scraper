@@ -2,6 +2,7 @@ import React from 'react';
 import PropType from 'prop-types';
 import {connect} from 'react-redux';
 import {fetchSubjects} from './src/actions/subjects';
+import {setPage, setBrowser} from './src/actions/nav';
 
 import SubjectList from './components/subject-list';
 
@@ -34,12 +35,12 @@ class App extends React.Component {
 
   handleClick() {
     const {user, password} = this.state;
-    console.log(user, password);
 
     this.getSubjects(user, password);
   }
 
   getSubjects(user, password) {
+    const {setBrowser, setPage, fetchSubjects} = this.props;
     UmFetcher.login(user, password)
       .then(({browser, page}) => {
         UmFetcher.getSubjects(page)
@@ -50,8 +51,9 @@ class App extends React.Component {
               title: e.title,
               checked: false,
             }));
-            // this.setState({subjects}); // FIXME: Change to redux
-            this.props.fetchSubjects(subjects);
+            fetchSubjects(subjects);
+            setBrowser(browser);
+            setPage(page);
           }).catch(err => {
             console.error(err);
           });
@@ -103,10 +105,14 @@ class App extends React.Component {
 
 App.propTypes = {
   fetchSubjects: PropType.func.isRequired,
+  setBrowser: PropType.func.isRequired,
+  setPage: PropType.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   fetchSubjects: subjects => dispatch(fetchSubjects(subjects)),
+  setBrowser: browser => dispatch(setBrowser(browser)),
+  setPage: page => dispatch(setPage(page)),
 });
 
 export default connect(null, mapDispatchToProps)(App);

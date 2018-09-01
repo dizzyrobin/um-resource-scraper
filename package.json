@@ -27,6 +27,8 @@
   "homepage": "https://github.com/dizzyrobin/um-resource-scraper#readme",
   "dependencies": {
     "electron": "^2.0.8",
+    "electron-dl": "^1.12.0",
+    "node-fetch": "^2.2.0",
     "postcss-modules": "^1.3.2",
     "prop-types": "^15.6.2",
     "puppeteer": "^1.7.0",

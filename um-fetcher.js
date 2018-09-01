@@ -1,19 +1,26 @@
 const puppeteer = require('puppeteer');
-const {user, password} = require('./key');
+const fetch = require('node-fetch');
+const fs = require('fs');
 
-const WAIT_LONG = 5000;
-const WAIT_NORMAL = 2000;
-const WAIT_SHORT = 1000;
+const WAIT_LONG = 2500;
+const WAIT_NORMAL = 1000;
+const WAIT_SHORT = 500;
+const WAIT_VERYSHORT = 250;
 
 const UM_LOGIN_PAGE = 'https://entrada.um.es/cas/login';
 const UM_AULA_PAGE = 'https://aulavirtual.um.es/portal/login';
+const UM_RESOURCE_PAGE = 'https://aulavirtual.um.es/access/content/group';
+
+const RESOURCE_DOWNLOAD_FOLDER = './resources';
+
+const getResourceLink = resource => `${UM_RESOURCE_PAGE}/${resource}/`;
 
 const waitMs = async ms => {
   return new Promise(resolve => {
     setTimeout(() => {
       resolve();
     }, ms);
-  })
+  });
 };
 
 const login = async (user, password) => {
@@ -49,10 +56,9 @@ const login = async (user, password) => {
   await waitMs(WAIT_LONG);
 
   return {browser, page};
-}
+};
 
 const getSubjects = async page => {
-
   await page.goto(UM_AULA_PAGE);
 
   console.log('Waiting for the JS...');
@@ -72,22 +78,19 @@ const getSubjects = async page => {
   }
 
   for (const i in sites) {
-    const site = await sites[i].$eval('a', e => {
-      const resourceLink = e.getAttribute('href').split('/');
-      const title = e.getAttribute('title');
+    if (Object.prototype.hasOwnProperty.call(sites, i)) {
+      const site = await sites[i].$eval('a', e => {
+        const resourceLink = e.getAttribute('href').split('/');
+        const title = e.getAttribute('title');
 
-      return {
-        resource: resourceLink[resourceLink.length - 1],
-        title,
-      };
-    });
-    sites[i] = site;
+        return {
+          resource: resourceLink[resourceLink.length - 1],
+          title,
+        };
+      });
+      sites[i] = site;
+    }
   }
-
-  // console.log('Printing the sites...');
-  // sites.forEach(e => {
-  //   console.log(JSON.stringify(e));
-  // });
 
   // TODO: Handle error if a non-unique resource is found
   return sites
@@ -95,15 +98,179 @@ const getSubjects = async page => {
     .sort((a, b) => a.title > b.title ? 1 : -1);
 };
 
-const closeBrowser = async () => {
+const scrapResources = async page => {
+  const files = await page.$$('li.file');
+  const folders = await page.$$('li.folder');
+
+  const fileLinks = [];
+  for (const i in files) {
+    fileLinks.push(await files[i].$eval('a', a => a.href));
+  }
+
+  const folderLinks = [];
+  for (const i in folders) {
+    folderLinks.push(await folders[i].$eval('a', a => a.href));
+  }
+
+  return {
+    files: fileLinks,
+    folders: folderLinks,
+  };
+};
+
+// TODO: Use the power of async! Remove those awaits inside the loop!
+const getAllLinks = async (page, resourceLink) => {
+  let allLinks = [];
+
+  console.log("Getting the page: " + resourceLink);
+
+  const resources = await scrapResources(page);
+
+  resources.files.forEach(f => allLinks.push(f));
+  for (const f of resources.folders) {
+    await page.goto(f);
+    await waitMs(WAIT_SHORT);
+    const res = await getAllLinks(page, f);
+    page = res.page;
+    allLinks = allLinks.concat(res.links);
+  }
+
+  return {
+    page,
+    links: allLinks,
+  };
+}
+
+const formatLink = link => {
+  // TODO: Remove that magic number
+  return link.split('/').slice(6); // Why 6? Good question! Because of  ['https:', '', 'aulavirtual.um.es', 'access', 'content', 'group'] has a length of 6.
+};
+
+const getResources = async (page, resource) => {
+  console.log('Getting resources...');
+  const resourceLink = getResourceLink(resource);
+  await page.goto(resourceLink);
+  await waitMs(WAIT_SHORT);
+
+  console.log('Scrapping page...');
+  const {links} = await getAllLinks(page, resourceLink);
+
+  console.log('Links found!');
+  const formattedLinks = links.map(l => ({url: l, formatted: formatLink(l)}));
+
+  return formattedLinks;
+};
+
+const closeBrowser = async browser => {
   console.log('Closing the headless browser...');
   await browser.close();
+};
+
+const createFolderHierarchy = formatted => {
+  let path = RESOURCE_DOWNLOAD_FOLDER;
+  for (const p of formatted) {
+    path += `/${p}`;
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path);
+    }
+  }
+
+  return path;
+};
+
+const downloadList = async (cookies, list) => {
+  for (const l of list) {
+    const {url, formatted} = l;
+    console.log(`Downloading: ${url}`);
+
+    const res = await fetch(url, {
+      headers: {
+        Cookie: cookies,
+        cookie: cookies, // TODO: Remove?
+      },
+    });
+
+    if (res.status !== 200) {
+      throw new Error(`Unexpected response code ${res.status}`);
+    }
+
+    const folder = createFolderHierarchy(formatted.slice(0, formatted.length - 1));
+    const file = fs.createWriteStream(`${folder}/${formatted[formatted.length - 1]}`);
+    await streamCompletion(res.body.pipe(file));
+  }
+};
+
+const stringifyCookie = ({ name, value }) => `${name}=${value}`;
+
+const streamCompletion = stream =>
+  new Promise((resolve, reject) => {
+    stream.on('end', resolve)
+    stream.on('finish', resolve)
+    stream.on('error', reject)
+  });
+
+const getCookies = async page => {
+  const cookies = await page.cookies();
+  const cookiesString = cookies.map(c => stringifyCookie(c)).reduce((prev, curr) => `${curr}; ${prev}`, '');
+
+  return cookiesString;
 }
+
+const downloadLink = async (page, link) => {
+  // const {url} = link;
+  const cookies = await getCookies(page);
+
+  // console.log("Downloading: " + url);
+
+  const res = await fetch('https://aulavirtual.um.es/access/content/group/1906_G_2017_N_N/PR%C3%81CTICAS/GRUPO%201/PRACTICA%201/P1.1-Fundamentos-Teoricos.pdf', {
+    headers: {
+      Cookie: cookies,
+      cookie: cookies,
+    },
+  });
+
+  if (res.status !== 200) {
+    throw new Error(`Unexpected response code ${res.status}`);
+  }
+
+  const file = fs.createWriteStream('whateeeeeeeeever.pdf');
+
+  console.log("EMPIEZA LA COPIA A LOCAL");
+  await streamCompletion(res.body.pipe(file));
+  console.log("ACABA LA COPIA A LOCAL");
+
+};
+
+// const downloadTest = async () => {
+//   console.log('Starting the headless browser...');
+//   const browser = await puppeteer.launch();
+
+//   console.log('Loading the login page...');
+//   const page = await browser.newPage();
+
+//   const downloadURL = "https://nodejs.org/dist/v6.11.3/SHASUMS256.txt.sig";
+
+//   const responseHandler = async (response) => {
+//     if (response.url !== downloadURL) {
+//       return
+//     }
+
+//     const buffer = await response.buffer();
+//     console.log('response buffer', buffer);
+//     browser.close();
+//   }
+//   page.on('response', responseHandler)
+//   await page.goto(downloadURL);
+// };
 
 module.exports.login = login;
 module.exports.closeBrowser = closeBrowser;
 module.exports.getSubjects = getSubjects;
+module.exports.getResources = getResources;
+module.exports.downloadList = downloadList;
+module.exports.downloadLink = downloadLink;
+// module.exports.downloadTest = downloadTest;
 
-
-  // console.log('Taking screenshot...');
-  // await page.screenshot({path: 'example.png'});
+// How to take a screenshot:
+// console.log('Taking screenshot...');
+// await page.screenshot({path: 'example.png'});
