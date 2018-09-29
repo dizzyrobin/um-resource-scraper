@@ -3,21 +3,17 @@ A web scraper for obtaining the resources of your profile in the University of M
 
 # English
 
-The english docs are not available yet. You can contribute and make a PR to help!
+Not available yet.
 
 # Spanish
 
 ## Introducción
 
-Con `um-resource-scraper` puedes descargarte todos los recursos de todas tus asignaturas del **Aula virtual** con tan solo un par de clicks. Cualquier aportación al proyecto es bien recibida.
+Con `um-resource-scraper` puedes descargarte todos los recursos de todas tus asignaturas del **Aula virtual** con tan solo un par de clicks.
 
 Para hacer esto posible el programa utiliza un _navegador headless_ basado en google chrome, con el que se hace login en el portal de entrada de la universidad y con el que se va recorriendo las distintas páginas de recursos de cada asignatura.
 
 Ya que el software se basa en un _web scraper_ para obtener los recursos, podrá dejar de funcionar siempre que se actualice cualquier página de la Universidad de Murcia.
-
-## Aviso importante
-
-El autor de este software no se hace responsable de cualquier uso ilegal o poco ético que se pueda hacer de él. El programa está diseñado únicamente con fines educativos. Al usarlo, el usuario es el único responsable de las posibles consecuencias. El software está publicado bajo la licencia MIT y no se ofrece ninguna garantía de su funcionamiento.
 
 ## ¿Por qué tengo que introducir mi contraseña?
 
@@ -43,4 +39,4 @@ npm run dev
 
 ## ¿Qué pasa si no tengo instalado eso de "node", o "git"?
 
-Ahora mismo, tanto `node` como `git` son requisitos indispensables para la instalación y ejecución del programa. En alguna versión más adelante se distribuirán binarios para los principales sistemas operativos.
+Ahora mismo, tanto `node` como `git` son requisitos indispensables para la instalación y ejecución del programa. Quizá, en alguna versión más adelante se distribuirán binarios para los principales sistemas operativos.
