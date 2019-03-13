@@ -1,6 +1,7 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
 const fetch = require('node-fetch');
+const { toKebab, toSnake } = require('./src/case-changer');
 
 const WAIT_LONG = 2500;
 const WAIT_NORMAL = 1000;
@@ -12,6 +13,7 @@ const UM_AULA_PAGE = 'https://aulavirtual.um.es/portal/login';
 const UM_RESOURCE_PAGE = 'https://aulavirtual.um.es/access/content/group';
 
 const RESOURCE_DOWNLOAD_FOLDER = './resources';
+
 
 const getResourceLink = resource => `${UM_RESOURCE_PAGE}/${resource}/`;
 
@@ -64,7 +66,7 @@ const login = async (user, password) => {
   await pageSubmit.click();
   await waitMs(WAIT_LONG);
 
-  return {browser, page};
+  return { browser, page };
 };
 
 const getSubjects = async page => {
@@ -166,10 +168,10 @@ const getResources = async (browser, resource) => {
   await waitMs(WAIT_SHORT);
 
   console.log('Scrapping page...');
-  const {links} = await getAllLinks(page, resourceLink);
+  const { links } = await getAllLinks(page, resourceLink);
 
   console.log('Links found!');
-  const formattedLinks = links.map(l => ({url: l, formatted: formatLink(l)}));
+  const formattedLinks = links.map(l => ({ url: l, formatted: formatLink(l) }));
 
   await page.close();
 
@@ -195,7 +197,7 @@ const createFolderHierarchy = formatted => {
 
 const downloadList = async (cookies, list) => {
   for (const l of list) {
-    const {url, formatted} = l;
+    const { url, formatted } = l;
     console.log(`Downloading: ${url}`);
 
     const res = await fetch(url, {
@@ -209,8 +211,19 @@ const downloadList = async (cookies, list) => {
       throw new Error(`Unexpected response code ${res.status}`);
     }
 
-    const folder = createFolderHierarchy(formatted.slice(0, formatted.length - 1));
-    const fileName = `${folder}/${formatted[formatted.length - 1]}`;
+    const formattedParsed = formatted.map((e) => {
+      const decoded = decodeURIComponent(e);
+      const splitted = decoded.split('.');
+      if (splitted.length <= 1) {
+        return toSnake(decoded);
+      }
+
+      const name = splitted.splice(0, splitted.length - 1).join('.');
+      const extension = splitted[0];
+      return `${toKebab(name)}.${extension}`;
+    });
+    const folder = createFolderHierarchy(formattedParsed.slice(0, formattedParsed.length - 1));
+    const fileName = `${folder}/${formattedParsed[formattedParsed.length - 1]}`;
     const file = fs.createWriteStream(fileName);
     await streamCompletion(res.body.pipe(file));
   }
